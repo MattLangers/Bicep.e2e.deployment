@@ -54,6 +54,8 @@ var environmentConfigurationMap = {
   }
 }
 
+var storageAccountImagesBlobContainerName = 'toyimages'
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2021-01-15' = {
   name: appServicePlanName
   location: location
@@ -84,6 +86,18 @@ resource appServiceApp 'Microsoft.Web/sites@2021-01-15' = {
           name: 'ReviewApiKey'
           value: reviewApiKey
         }
+        {
+          name: 'StorageAccountName'
+          value: storageAccount.name
+        }
+        {
+          name: 'StorageAccountBlobEndpoint'
+          value: storageAccount.properties.primaryEndpoints.blob
+        }
+        {
+          name: 'StorageAccountImagesContainerName'
+          value: storageAccount::blobService::storageAccountImagesBlobContainer.name
+        }
       ]
     }
   }
@@ -105,7 +119,21 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-04-01' = {
   location: location
   kind: 'StorageV2'
   sku: environmentConfigurationMap[environmentType].storageAccount.sku
+
+  resource blobService 'blobServices' = {
+    name: 'default'
+
+    resource storageAccountImagesBlobContainer 'containers' = {
+      name: storageAccountImagesBlobContainerName
+
+      properties: {
+        publicAccess: 'Blob'
+      }
+    }
+  }
 }
 
 output appServiceAppName string = appServiceApp.name
 output appServiceAppHostName string = appServiceApp.properties.defaultHostName
+output storageAccountName string = storageAccount.name
+output storageAccountImagesBlobContainerName string = storageAccount::blobService::storageAccountImagesBlobContainer.name
